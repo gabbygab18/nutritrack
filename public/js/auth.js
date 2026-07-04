@@ -54,6 +54,15 @@
         hideAuthError();
     }
 
+    // Fade the page out, then hand off to the next page — avoids the hard
+    // "flash" of an instant redirect right after a successful login/signup.
+    function goToApp() {
+        document.body.classList.add('page-fade-out');
+        setTimeout(function () {
+            window.location.href = '/';
+        }, 280);
+    }
+
     function init() {
         qsa('.auth-tab').forEach(function (tab) {
             tab.addEventListener('click', function () { setAuthMode(tab.dataset.tab); });
@@ -78,10 +87,17 @@
                 path = '/register';
             }
 
+            var submitBtn = $('authSubmit');
+            var originalLabel = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = authMode === 'signup' ? 'Creating account…' : 'Logging in…';
+
             authRequest(path, payload).then(function () {
-                window.location.href = '/';
+                goToApp();
             }).catch(function (err) {
                 showAuthError(err.message || 'Incorrect email or password.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalLabel;
             });
         });
     }

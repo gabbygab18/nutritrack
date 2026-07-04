@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'NutriTrack') }} — Track calories &amp; protein</title>
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,7 +16,7 @@
 </head>
 
 <body>
-    <div id="view-auth" class="auth-shell">
+    <div class="auth-shell">
         <div class="auth-card">
             <div class="auth-brand">
                 <svg class="logo-mark" viewBox="0 0 40 40" fill="none">
@@ -32,22 +35,13 @@
             </div>
 
             <div class="auth-head">
-                <h1 class="display-md" id="authTitle">Welcome back.</h1>
-                <p class="body">Log your meals, hit your macros, keep the receipts.</p>
-            </div>
-
-            <div class="auth-tabs">
-                <button type="button" class="auth-tab active" data-tab="login">Log in</button>
-                <button type="button" class="auth-tab" data-tab="signup">Sign up</button>
+                <h1 class="display-md">Welcome back.</h1>
+                <p class="body" style="margin-bottom: 6px;">Log your meals, hit your macros, keep the receipts.</p>
             </div>
 
             <p id="authError" class="auth-error"></p>
 
             <form id="authForm" class="auth-form">
-                <div class="field hidden" id="fieldName">
-                    <label for="authName">Your name</label>
-                    <input class="text-input" id="authName" placeholder="Juan Dela Cruz" autocomplete="name">
-                </div>
                 <div class="field">
                     <label for="authEmail">Email address</label>
                     <input class="text-input" id="authEmail" type="email" placeholder="you@email.com"
@@ -60,6 +54,10 @@
                 </div>
                 <button type="submit" class="btn btn-primary btn-block" id="authSubmit">Log in</button>
             </form>
+
+            <p class="auth-note">
+                Don’t have an account? <a href="{{ route('register') }}" style="color:var(--accent-blue);">Sign up</a>
+            </p>
         </div>
     </div>
 

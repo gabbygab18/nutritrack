@@ -105,6 +105,39 @@ textarea {
     padding: 0 18px;
   }
 }
+/* ---------- custom scrollbars (match dark theme) ---------- */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: var(--r-pill);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--hairline);
+}
+/* ---------- remove native number input spinners ---------- */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
 
 /* ---------- type scale ---------- */
 .display-lg {
@@ -223,6 +256,36 @@ textarea {
   padding: 12px 18px;
 }
 
+/* ---------- button loading state ---------- */
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  display: inline-block;
+  flex-shrink: 0;
+  animation: btn-spin .6s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn.is-loading {
+  cursor: default;
+  pointer-events: none;
+  opacity: .85;
+}
+
+.icon-btn-sm.is-loading {
+  cursor: default;
+  pointer-events: none;
+  color: var(--ink);
+}
+
 .btn-icon {
   width: 32px;
   height: 32px;
@@ -256,6 +319,7 @@ textarea {
   font-size: 13px;
   font-weight: 500;
   color: var(--ink-muted);
+  margin-top: 6px;
 }
 
 .text-input {
@@ -1040,6 +1104,12 @@ main {
   gap: 12px;
 }
 
+@media (max-width: 480px) {
+  .form-row-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 .form-row-4 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1056,6 +1126,12 @@ main {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .goal-form-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chip-select {
@@ -1243,6 +1319,58 @@ main {
 .lightbox-close svg {
   width: 14px;
   height: 14px;
+}
+
+/* ============================================================
+   CROP MODAL (Cropper.js — profile picture + progress photos)
+   ============================================================ */
+.modal-crop {
+  max-width: 440px;
+}
+
+.crop-stage {
+  width: 100%;
+  height: 340px;
+  background: #000;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  margin-top: 2px;
+}
+
+.crop-stage img {
+  display: block;
+  max-width: 100%;
+}
+
+.crop-hint {
+  text-align: center;
+  margin-top: 12px;
+  margin-bottom: 2px;
+}
+
+/* Re-skin Cropper.js chrome to match the app's dark surfaces + accent */
+.cropper-modal {
+  background: var(--canvas);
+  opacity: .78;
+}
+
+.cropper-view-box {
+  outline: 1px solid var(--accent-blue);
+  box-shadow: 0 0 0 1px var(--accent-blue);
+}
+
+.cropper-line,
+.cropper-point {
+  background-color: var(--accent-blue);
+}
+
+.cropper-dashed {
+  border-color: rgba(255, 255, 255, .35);
+}
+
+.cropper-center::before,
+.cropper-center::after {
+  background-color: var(--accent-blue);
 }
 
 /* ============================================================

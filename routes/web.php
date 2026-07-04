@@ -12,20 +12,22 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', function () {
         return view('auth');
     })->name('login');
-});
 
-Route::middleware('auth')->group(function () {
-    Route::get('/', function () {
-        return view('app', [
-            'currentUser' => auth()->user(),
-        ]);
-    })->name('app');
+    // New registration page
+    Route::get('/register', function () {
+        return view('register');
+    })->name('register');
 });
 
 Route::post('/api/register', [AuthController::class, 'register']);
 Route::post('/api/login', [AuthController::class, 'login']);
 
 Route::middleware('auth')->group(function () {
+    Route::get('/', function () {
+        return view('app', [
+            'currentUser' => auth()->user(),
+        ]);
+    })->name('dashboard');
     Route::post('/api/logout', [AuthController::class, 'logout']);
     Route::get('/api/user', [AuthController::class, 'user']);
 

@@ -6,9 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'NutriTrack') }} — Track calories &amp; protein</title>
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 </head>
 
@@ -352,6 +356,15 @@
                     </svg>
                     History
                 </button>
+                <button class="tab-btn" data-view="settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    Settings
+                </button>
             </div>
         </div>
     </div>
@@ -565,6 +578,31 @@
     </div>
 
     <!-- ============================================================ -->
+    <!-- CROP MODAL (profile picture + progress photo cropping)       -->
+    <!-- ============================================================ -->
+    <div id="cropModalOverlay" class="modal-overlay">
+        <div class="modal modal-crop">
+            <div class="modal-head">
+                <h3 class="headline" id="cropModalTitle">Adjust your photo</h3>
+                <button class="btn-icon" id="cropModalClose" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="crop-stage">
+                <img id="cropImage" alt="Crop preview">
+            </div>
+            <p class="micro crop-hint">Drag to reposition · scroll or pinch to zoom.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" id="cropCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="cropConfirmBtn">Use this photo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
     <!-- PHOTO LIGHTBOX (view full meal photo from history)            -->
     <!-- ============================================================ -->
     <div id="lightboxOverlay" class="modal-overlay">
@@ -592,6 +630,7 @@
         window.CURRENT_USER = @json($currentUser);
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script src="{{ asset('js/app.js') }}"></script>
 </body>
 

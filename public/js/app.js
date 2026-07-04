@@ -90,6 +90,33 @@
         showToast._t = setTimeout(function () { toast.classList.remove('show'); }, 2400);
     }
 
+    /**
+     * Toggles a spinner + disabled state on any button while an async
+     * action is in flight. Safe to call repeatedly; restores the
+     * button's original markup when loading is turned off.
+     * loadingText is optional — omit it for icon-only buttons.
+     */
+    function setBtnLoading(btn, loading, loadingText) {
+        if (!btn) return;
+        if (loading) {
+            if (btn.dataset.loading === '1') return;
+            btn.dataset.loading = '1';
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.classList.add('is-loading');
+            btn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>' +
+                (loadingText ? '<span>' + escapeHtml(loadingText) + '</span>' : '');
+        } else {
+            btn.dataset.loading = '';
+            btn.disabled = false;
+            btn.classList.remove('is-loading');
+            if (btn.dataset.originalHtml != null) {
+                btn.innerHTML = btn.dataset.originalHtml;
+                delete btn.dataset.originalHtml;
+            }
+        }
+    }
+
     function getCsrfToken() {
         var match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
         if (match) return decodeURIComponent(match[1]);
@@ -175,63 +202,6 @@
         $('authPassword').autocomplete = mode === 'signup' ? 'new-password' : 'current-password';
         hideAuthError();
     }
-
-    // function initAuth() {
-    //     qsa('.auth-tab').forEach(function (tab) {
-    //         tab.addEventListener('click', function () { setAuthMode(tab.dataset.tab); });
-    //     });
-
-    //     $('authForm').addEventListener('submit', function (e) {
-    //         e.preventDefault();
-    //         hideAuthError();
-
-    //         var email = $('authEmail').value.trim().toLowerCase();
-    //         var password = $('authPassword').value;
-
-    //         if (!email || !password) {
-    //             return showAuthError('Please fill in all fields.');
-    //         }
-
-    //         if (authMode === 'signup') {
-    //             var name = $('authName').value.trim();
-    //             if (!name) return showAuthError('Please enter your name.');
-
-    //             authRequest('/register', {
-    //                 name: name,
-    //                 email: email,
-    //                 password: password,
-    //             }).then(function (user) {
-    //                 currentUser = user;
-    //                 $('authForm').reset();
-    //                 enterApp();
-    //             }).catch(function (err) {
-    //                 showAuthError(err.message || 'Could not register.');
-    //             });
-    //         } else {
-    //             authRequest('/login', { email: email, password: password }).then(function (user) {
-    //                 currentUser = user;
-    //                 $('authForm').reset();
-    //                 enterApp();
-    //             }).catch(function (err) {
-    //                 showAuthError(err.message || 'Incorrect email or password.');
-    //             });
-    //         }
-    //     });
-
-    //     $('logoutBtn').addEventListener('click', function () {
-    //         apiFetch('/logout', { method: 'POST' })
-    //             .then(function () {
-    //                 currentUser = null;
-    //                 setAuthMode('login');
-    //                 $('authForm').reset();
-    //                 $('view-app').classList.add('hidden');
-    //                 $('view-auth').classList.remove('hidden');
-    //             })
-    //             .catch(function () {
-    //                 showToast('Could not log out right now.');
-    //             });
-    //     });
-    // }
 
     /* ============================================================
        APP SHELL / NAV
@@ -362,10 +332,10 @@
 
     function bindEntryRowEvents(container) {
         qsa('[data-edit]', container).forEach(function (btn) {
-            btn.addEventListener('click', function () { editEntry(btn.dataset.edit); });
+            btn.addEventListener('click', function () { editEntry(btn.dataset.edit, btn); });
         });
         qsa('[data-delete]', container).forEach(function (btn) {
-            btn.addEventListener('click', function () { deleteEntry(btn.dataset.delete); });
+            btn.addEventListener('click', function () { deleteEntry(btn.dataset.delete, btn); });
         });
         qsa('[data-photo]', container).forEach(function (img) {
             img.addEventListener('click', function () {
@@ -386,8 +356,10 @@
         if (view === 'history') renderHistory();
     }
 
-    function editEntry(id) {
+    function editEntry(id, btn) {
+        setBtnLoading(btn, true);
         fetchEntry(id).then(function (entry) {
+            setBtnLoading(btn, false);
             openEntryModal({
                 editId: entry.id,
                 name: entry.name,
@@ -401,17 +373,20 @@
                 photo: entry.photo,
             });
         }).catch(function () {
+            setBtnLoading(btn, false);
             showToast('Could not load entry.');
         });
     }
 
-    function deleteEntry(id) {
+    function deleteEntry(id, btn) {
         if (!confirm("Delete this entry? This can't be undone.")) return;
+        setBtnLoading(btn, true);
         apiFetch('/entries/' + encodeURIComponent(id), { method: 'DELETE' })
             .then(function () {
                 showToast('Entry deleted');
                 refreshCurrentView();
             }).catch(function () {
+                setBtnLoading(btn, false);
                 showToast('Could not delete entry.');
             });
     }
@@ -424,7 +399,11 @@
             e.preventDefault();
             var q = $('searchInput').value.trim();
             if (!q) return;
-            performSearch(q);
+            var btn = $('searchBtn');
+            setBtnLoading(btn, true, 'Searching…');
+            performSearch(q).then(function () {
+                setBtnLoading(btn, false);
+            });
         });
         $('manualAddBtn').addEventListener('click', function () {
             openEntryModal({ servingUnit: 'serving' });
@@ -434,7 +413,7 @@
     function performSearch(query) {
         $('searchResults').innerHTML = '<div class="search-status">Searching…</div>';
 
-        apiFetch('/foods/search?q=' + encodeURIComponent(query))
+        return apiFetch('/foods/search?q=' + encodeURIComponent(query))
             .then(function (data) {
                 var local = (data.local || []).map(normalizeFoodResult);
                 var usda = (data.usda || []).map(normalizeFoodResult);
@@ -568,15 +547,19 @@
 
             var method = editingEntryId ? 'PUT' : 'POST';
             var path = editingEntryId ? '/entries/' + encodeURIComponent(editingEntryId) : '/entries';
+            var saveBtn = $('entrySaveBtn');
+            setBtnLoading(saveBtn, true, editingEntryId ? 'Saving…' : 'Logging…');
 
             apiFetch(path, { method: method, body: payload })
                 .then(function () {
                     var wasEditing = !!editingEntryId;
                     editingEntryId = null;
+                    setBtnLoading(saveBtn, false);
                     closeModal('entryModalOverlay');
                     showToast(wasEditing ? 'Entry updated' : 'Meal logged');
                     refreshCurrentView();
                 }).catch(function () {
+                    setBtnLoading(saveBtn, false);
                     showToast('Could not save entry. Please try again.');
                 });
         });
@@ -652,6 +635,85 @@
         });
     }
 
+    function readFileAsDataUrl(file) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function (e) { resolve(e.target.result); };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    /* ============================================================
+       CROP MODAL — shared by profile picture + progress photos
+       ============================================================ */
+    var cropper = null;
+    var cropOnConfirm = null; // function(dataUrl) called when the user confirms the crop
+
+    /**
+     * Opens the crop modal for a given image file.
+     * opts.aspectRatio — width/height ratio for the crop box (1 = square)
+     * opts.outputWidth / opts.outputHeight — pixel size of the exported image
+     * opts.title — modal heading
+     * opts.onConfirm(dataUrl) — called with the cropped JPEG data URL
+     */
+    function openCropModal(file, opts) {
+        opts = opts || {};
+        readFileAsDataUrl(file).then(function (dataUrl) {
+            $('cropModalTitle').textContent = opts.title || 'Adjust your photo';
+            $('cropImage').src = dataUrl;
+            cropOnConfirm = opts.onConfirm || null;
+            openModal('cropModalOverlay');
+
+            if (cropper) { cropper.destroy(); cropper = null; }
+            cropper = new Cropper($('cropImage'), {
+                aspectRatio: opts.aspectRatio || 1,
+                viewMode: 1,
+                dragMode: 'move',
+                autoCropArea: 1,
+                cropBoxResizable: false,
+                cropBoxMovable: false,
+                background: false,
+                guides: false,
+                center: false,
+                highlight: false
+            });
+
+            $('cropModalOverlay').dataset.outputWidth = opts.outputWidth || 500;
+            $('cropModalOverlay').dataset.outputHeight = opts.outputHeight || 500;
+        }).catch(function () {
+            showToast('Could not read that image.');
+        });
+    }
+
+    function closeCropModal() {
+        closeModal('cropModalOverlay');
+        if (cropper) { cropper.destroy(); cropper = null; }
+        cropOnConfirm = null;
+    }
+
+    function initCropModal() {
+        $('cropModalClose').addEventListener('click', closeCropModal);
+        $('cropCancelBtn').addEventListener('click', closeCropModal);
+
+        $('cropConfirmBtn').addEventListener('click', function () {
+            if (!cropper) return;
+            var overlay = $('cropModalOverlay');
+            var canvas = cropper.getCroppedCanvas({
+                width: Number(overlay.dataset.outputWidth) || 500,
+                height: Number(overlay.dataset.outputHeight) || 500,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
+            if (!canvas) { showToast('Could not crop that image.'); return; }
+
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+            var callback = cropOnConfirm;
+            closeCropModal();
+            if (callback) callback(dataUrl);
+        });
+    }
+
     /* ============================================================
        GOALS MODAL
        ============================================================ */
@@ -691,23 +753,25 @@
                 confirmButtonText: 'Save goals',
                 cancelButtonText: 'Cancel',
                 buttonsStyling: false,
+                showLoaderOnConfirm: true,
+                allowOutsideClick: function () { return !Swal.isLoading(); },
                 customClass: {
                     popup: 'swal-dark-popup',
                     confirmButton: 'btn btn-primary',
                     cancelButton: 'btn btn-secondary',
                     actions: 'swal-actions'
+                },
+                preConfirm: function () {
+                    return apiFetch('/goals', { method: 'POST', body: { calories: calories, protein: protein, carbs: carbs, fat: fat } })
+                        .catch(function (err) {
+                            Swal.showValidationMessage(err.message || 'Could not update goals.');
+                        });
                 }
             }).then(function (result) {
                 if (!result.isConfirmed) return;
-
-                apiFetch('/goals', { method: 'POST', body: { calories: calories, protein: protein, carbs: carbs, fat: fat } })
-                    .then(function () {
-                        closeModal('goalsModalOverlay');
-                        showToast('Goals updated');
-                        renderDashboard();
-                    }).catch(function () {
-                        showToast('Could not update goals.');
-                    });
+                closeModal('goalsModalOverlay');
+                showToast('Goals updated');
+                renderDashboard();
             });
         });
     }
@@ -811,20 +875,22 @@
                 });
             });
             qsa('[data-delete-physique]', wrap).forEach(function (btn) {
-                btn.addEventListener('click', function () { deletePhysiquePhoto(btn.dataset.deletePhysique); });
+                btn.addEventListener('click', function () { deletePhysiquePhoto(btn.dataset.deletePhysique, btn); });
             });
         }).catch(function () {
             wrap.innerHTML = '<div class="search-status">Could not load progress photos.</div>';
         });
     }
 
-    function deletePhysiquePhoto(id) {
+    function deletePhysiquePhoto(id, btn) {
         if (!confirm("Delete this photo? This can't be undone.")) return;
+        setBtnLoading(btn, true);
         apiFetch('/physique-photos/' + encodeURIComponent(id), { method: 'DELETE' })
             .then(function () {
                 showToast('Photo deleted');
                 renderPhysiqueGrid();
             }).catch(function () {
+                setBtnLoading(btn, false);
                 showToast('Could not delete photo.');
             });
     }
@@ -844,14 +910,20 @@
             var file = e.target.files && e.target.files[0];
             if (!file) return;
             if (file.type.indexOf('image/') !== 0) { showToast('Please choose an image file.'); return; }
-            resizeImage(file, 400, 0.8).then(function (dataUrl) {
-                pendingAvatarDataUrl = dataUrl;
-                $('avatarPreviewImg').src = dataUrl;
-                $('avatarPreviewWrap').classList.remove('hidden');
-                $('avatarDrop').classList.add('hidden');
-            }).catch(function () {
-                showToast('Could not read that image.');
+            openCropModal(file, {
+                aspectRatio: 1,
+                outputWidth: 500,
+                outputHeight: 500,
+                title: 'Adjust your profile picture',
+                onConfirm: function (dataUrl) {
+                    pendingAvatarDataUrl = dataUrl;
+                    $('avatarPreviewImg').src = dataUrl;
+                    $('avatarPreviewWrap').classList.remove('hidden');
+                    $('avatarDrop').classList.add('hidden');
+                }
             });
+            // Reset so choosing the same file again still fires 'change'
+            $('avatarInput').value = '';
         });
         $('avatarRemoveBtn').addEventListener('click', function () {
             pendingAvatarDataUrl = null;
@@ -864,13 +936,17 @@
             e.preventDefault();
             var name = $('profileName').value.trim();
             if (!name) { showToast('Please enter your name.'); return; }
+            var btn = qs('button[type="submit"]', $('profileForm'));
+            setBtnLoading(btn, true, 'Saving…');
             apiFetch('/settings/profile', { method: 'POST', body: { name: name, avatar: pendingAvatarDataUrl } })
                 .then(function (user) {
                     currentUser = user;
                     updateUserAvatarChip();
                     $('userName').textContent = currentUser.name.trim().split(/\s+/)[0] || currentUser.name;
+                    setBtnLoading(btn, false);
                     showToast('Profile updated');
                 }).catch(function () {
+                    setBtnLoading(btn, false);
                     showToast('Could not update profile.');
                 });
         });
@@ -889,13 +965,17 @@
                 return;
             }
 
+            var btn = qs('button[type="submit"]', $('passwordForm'));
+            setBtnLoading(btn, true, 'Updating…');
             apiFetch('/settings/password', {
                 method: 'POST',
                 body: { current_password: current, password: next, password_confirmation: confirmVal }
             }).then(function () {
+                setBtnLoading(btn, false);
                 $('passwordForm').reset();
                 showToast('Password updated');
             }).catch(function (err) {
+                setBtnLoading(btn, false);
                 $('passwordError').textContent = err.message || 'Could not update password.';
                 $('passwordError').classList.add('show');
             });
@@ -909,14 +989,19 @@
             var file = e.target.files && e.target.files[0];
             if (!file) return;
             if (file.type.indexOf('image/') !== 0) { showToast('Please choose an image file.'); return; }
-            resizeImage(file).then(function (dataUrl) {
-                pendingPhysiquePhotoDataUrl = dataUrl;
-                $('physiquePreviewImg').src = dataUrl;
-                $('physiquePreviewWrap').classList.remove('hidden');
-                $('physiquePhotoDrop').classList.add('hidden');
-            }).catch(function () {
-                showToast('Could not read that image.');
+            openCropModal(file, {
+                aspectRatio: 3 / 4,
+                outputWidth: 720,
+                outputHeight: 960,
+                title: 'Adjust your progress photo',
+                onConfirm: function (dataUrl) {
+                    pendingPhysiquePhotoDataUrl = dataUrl;
+                    $('physiquePreviewImg').src = dataUrl;
+                    $('physiquePreviewWrap').classList.remove('hidden');
+                    $('physiquePhotoDrop').classList.add('hidden');
+                }
             });
+            $('physiquePhotoInput').value = '';
         });
         $('physiquePhotoRemoveBtn').addEventListener('click', function () {
             pendingPhysiquePhotoDataUrl = null;
@@ -934,22 +1019,28 @@
                 date: $('physiqueDate').value || todayISO(),
                 timestamp: Date.now()
             };
+            var btn = qs('button[type="submit"]', $('physiqueForm'));
+            setBtnLoading(btn, true, 'Saving…');
             apiFetch('/physique-photos', { method: 'POST', body: payload })
                 .then(function () {
+                    setBtnLoading(btn, false);
                     closeModal('physiqueModalOverlay');
                     showToast('Photo added');
                     renderPhysiqueGrid();
                 }).catch(function () {
+                    setBtnLoading(btn, false);
                     showToast('Could not save photo.');
                 });
         });
 
         $('logoutBtn').addEventListener('click', function () {
+            setBtnLoading($('logoutBtn'), true, 'Logging out…');
             apiFetch('/logout', { method: 'POST' })
                 .then(function () {
                     window.location.href = '/login';
                 })
                 .catch(function () {
+                    setBtnLoading($('logoutBtn'), false);
                     showToast('Could not log out right now.');
                 });
         });
@@ -964,11 +1055,16 @@
     function initModalDismiss() {
         qsa('.modal-overlay').forEach(function (overlay) {
             overlay.addEventListener('click', function (e) {
-                if (e.target === overlay) overlay.classList.remove('show');
+                if (e.target === overlay) {
+                    if (overlay.id === 'cropModalOverlay') { closeCropModal(); }
+                    else { overlay.classList.remove('show'); }
+                }
             });
         });
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') qsa('.modal-overlay.show').forEach(function (o) { o.classList.remove('show'); });
+            if (e.key !== 'Escape') return;
+            if ($('cropModalOverlay').classList.contains('show')) { closeCropModal(); return; }
+            qsa('.modal-overlay.show').forEach(function (o) { o.classList.remove('show'); });
         });
         $('lightboxClose').addEventListener('click', function () { closeModal('lightboxOverlay'); });
 
@@ -986,6 +1082,7 @@
         initNav();
         initSearch();
         initEntryModal();
+        initCropModal();
         initGoals();
         initHistory();
         initSettings();
