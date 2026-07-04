@@ -149,7 +149,8 @@
                                         <path d="M21.2 8.8A10 10 0 0 0 15.2 2.8" />
                                     </svg></div>
                             </div>
-                            <div class="stat-value"><span id="statCarbs">0</span><small>g</small></div>
+                            <div class="stat-value"><span id="statCarbs">0</span><small>g / <span
+                                        id="statCarbsGoal">275</span>g</small></div>
                             <div class="stat-label">Carbs</div>
                             <div class="progress-track">
                                 <div class="progress-fill" id="barCarbs" style="width:0%"></div>
@@ -163,7 +164,8 @@
                                         <path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" />
                                     </svg></div>
                             </div>
-                            <div class="stat-value"><span id="statFat">0</span><small>g</small></div>
+                            <div class="stat-value"><span id="statFat">0</span><small>g / <span
+                                        id="statFatGoal">78</span>g</small></div>
                             <div class="stat-label">Fat</div>
                             <div class="progress-track">
                                 <div class="progress-fill" id="barFat" style="width:0%"></div>
@@ -487,6 +489,18 @@
                             required>
                     </div>
                 </div>
+                <div class="goal-form-row">
+                    <div class="field">
+                        <label for="goalCarbs">Carb goal (g)</label>
+                        <input class="text-input" id="goalCarbs" type="number" min="1" step="1"
+                            required>
+                    </div>
+                    <div class="field">
+                        <label for="goalFat">Fat goal (g)</label>
+                        <input class="text-input" id="goalFat" type="number" min="1" step="1"
+                            required>
+                    </div>
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="goalsCancelBtn">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save goals</button>
@@ -577,6 +591,7 @@
     <script>
         window.CURRENT_USER = @json($currentUser);
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/app.js') }}"></script>
 </body>
 

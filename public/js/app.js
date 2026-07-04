@@ -10,9 +10,9 @@
     // var USDA_SEARCH_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
     var API_BASE = '/api';
 
-    var DEFAULT_GOALS = { calories: 2000, protein: 120 };
-    var CARB_REFERENCE = 275;
-    var FAT_REFERENCE = 78;
+    var DEFAULT_GOALS = { calories: 2000, protein: 120, carbs: 275, fat: 78 };
+    // var CARB_REFERENCE = 275;
+    // var FAT_REFERENCE = 78;
 
     /* ---------------- State ---------------- */
     var currentUser = null;
@@ -305,6 +305,8 @@
 
             $('statCaloriesGoal').textContent = goals.calories;
             $('statProteinGoal').textContent = goals.protein;
+            $('statCarbsGoal').textContent = goals.carbs;
+            $('statFatGoal').textContent = goals.fat;
 
             var totals = sumEntries(todayEntries);
             $('statCalories').textContent = Math.round(totals.calories);
@@ -314,8 +316,8 @@
 
             $('barCalories').style.width = pct(totals.calories, goals.calories) + '%';
             $('barProtein').style.width = pct(totals.protein, goals.protein) + '%';
-            $('barCarbs').style.width = pct(totals.carbs, CARB_REFERENCE) + '%';
-            $('barFat').style.width = pct(totals.fat, FAT_REFERENCE) + '%';
+            $('barCarbs').style.width = pct(totals.carbs, goals.carbs) + '%';
+            $('barFat').style.width = pct(totals.fat, goals.fat) + '%';
 
             var recentWrap = $('dashRecent');
             if (!todayEntries.length) {
@@ -658,6 +660,8 @@
             fetchGoals().then(function (goals) {
                 $('goalCalories').value = goals.calories;
                 $('goalProtein').value = goals.protein;
+                $('goalCarbs').value = goals.carbs;
+                $('goalFat').value = goals.fat;
                 openModal('goalsModalOverlay');
             }).catch(function () {
                 showToast('Could not load goals.');
@@ -670,14 +674,41 @@
             e.preventDefault();
             var calories = Number($('goalCalories').value) || DEFAULT_GOALS.calories;
             var protein = Number($('goalProtein').value) || DEFAULT_GOALS.protein;
-            apiFetch('/goals', { method: 'POST', body: { calories: calories, protein: protein } })
-                .then(function () {
-                    closeModal('goalsModalOverlay');
-                    showToast('Goals updated');
-                    renderDashboard();
-                }).catch(function () {
-                    showToast('Could not update goals.');
-                });
+            var carbs = Number($('goalCarbs').value) || DEFAULT_GOALS.carbs;
+            var fat = Number($('goalFat').value) || DEFAULT_GOALS.fat;
+
+            Swal.fire({
+                title: 'Update your daily goals?',
+                html:
+                    '<div style="text-align:left;font-size:14px;line-height:1.7;">' +
+                    '<b>' + calories + '</b> kcal &middot; ' +
+                    '<b>' + protein + '</b>g protein<br>' +
+                    '<b>' + carbs + '</b>g carbs &middot; ' +
+                    '<b>' + fat + '</b>g fat' +
+                    '</div>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Save goals',
+                cancelButtonText: 'Cancel',
+                buttonsStyling: false,
+                customClass: {
+                    popup: 'swal-dark-popup',
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary',
+                    actions: 'swal-actions'
+                }
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                apiFetch('/goals', { method: 'POST', body: { calories: calories, protein: protein, carbs: carbs, fat: fat } })
+                    .then(function () {
+                        closeModal('goalsModalOverlay');
+                        showToast('Goals updated');
+                        renderDashboard();
+                    }).catch(function () {
+                        showToast('Could not update goals.');
+                    });
+            });
         });
     }
 

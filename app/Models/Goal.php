@@ -13,6 +13,8 @@ class Goal extends Model
         'user_id',
         'calories',
         'protein',
+        'carbs',
+        'fat',
     ];
 
     public function user()

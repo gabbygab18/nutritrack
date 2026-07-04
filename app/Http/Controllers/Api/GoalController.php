@@ -12,7 +12,7 @@ class GoalController extends Controller
     {
         $goal = Goal::firstOrCreate(
             ['user_id' => $request->user()->id],
-            ['calories' => 2000, 'protein' => 120]
+            ['calories' => 2000, 'protein' => 120, 'carbs' => 275, 'fat' => 78]
         );
 
         return response()->json($goal);
@@ -23,6 +23,8 @@ class GoalController extends Controller
         $data = $request->validate([
             'calories' => 'required|integer|min:1',
             'protein' => 'required|integer|min:1',
+            'carbs' => 'required|integer|min:1',
+            'fat' => 'required|integer|min:1',
         ]);
 
         $goal = Goal::updateOrCreate(
