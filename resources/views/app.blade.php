@@ -549,7 +549,7 @@
                             <b>Upload a photo</b>
                             <span class="micro">Tap to choose an image</span>
                         </div>
-                        <input type="file" id="physiquePhotoInput" accept="image/*" required>
+                        <input type="file" id="physiquePhotoInput" accept="image/*">
                     </label>
                     <div id="physiquePreviewWrap" class="photo-preview-wrap hidden">
                         <img id="physiquePreviewImg" alt="Progress photo preview">

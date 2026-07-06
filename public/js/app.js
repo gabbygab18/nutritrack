@@ -889,9 +889,10 @@
             .then(function () {
                 showToast('Photo deleted');
                 renderPhysiqueGrid();
-            }).catch(function () {
+            }).catch(function (err) {
                 setBtnLoading(btn, false);
-                showToast('Could not delete photo.');
+                console.error('Physique photo save error:', err.status, err.response);
+                showToast((err.response && err.response.message) || 'Could not save photo.');
             });
     }
 
